@@ -5,7 +5,7 @@ rl = sys.stdin.readline
 
 
 def solve():
-    print('Hello! AtCoder!')
+    print('Hello! yukicoder!')
 
 
 if __name__ == '__main__':
