@@ -1,30 +1,41 @@
 import sys
+from bisect import bisect_left
 
 sys.setrecursionlimit(10 ** 7)
 rl = sys.stdin.readline
 
 
+def eratosthenes(n):
+    prime = [2]
+    if n == 2:
+        return prime
+    limit = int(n ** 0.5)
+    data = [i + 1 for i in range(2, n, 2)]
+    while True:
+        p = data[0]
+        if limit <= p:
+            return prime + data
+        prime.append(p)
+        data = [e for e in data if e % p != 0]
+
+
 def solve():
-    N, K, X, Y = map(int, rl().split())
-    A = [ai - 1 for ai in map(int, rl().split())]
+    N = int(rl())
     
-    lim = Y // X
-    if lim == 0:
-        print(-(-max(A) // K))
+    if N == 1:
+        print(1)
         return
     
-    B = [-(-ai // K) for ai in A]
-    B.sort()
-    C = B[-lim:]
-    
-    cnt = 0
-    if len(C) != N:
-        cnt = B[-(lim + 1)]
-    
-    ans = cnt * Y
-    for ci in C:
-        ans += (ci - cnt) * X
-    print(ans)
+    prime_nums = eratosthenes(10 ** 5 + 1000)
+    prime_nums.sort()
+    idx = bisect_left(prime_nums, 10 ** 5)
+    p = prime_nums[idx:idx + (N + 1)]
+    nice_nums = []
+    for i, pi in enumerate(p[:-1]):
+        for pj in p[i:]:
+            nice_nums.append(pi * pj)
+    nice_nums.sort()
+    print(nice_nums[N - 2])
 
 
 if __name__ == '__main__':

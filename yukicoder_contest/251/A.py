@@ -5,12 +5,13 @@ rl = sys.stdin.readline
 
 
 def solve():
-    A, B = map(int, rl().split())
+    C = rl().rstrip()
     
-    if A == B:
-        print(A + B - 1)
-    else:
-        print(min(A, B) * 2)
+    ans = 0
+    for ci in C[1:]:
+        if ci != '0':
+            ans += 1
+    print(ans)
 
 
 if __name__ == '__main__':
