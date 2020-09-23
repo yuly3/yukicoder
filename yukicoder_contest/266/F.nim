@@ -9,99 +9,6 @@ proc chmin*[T: SomeNumber](num0: var T, num1: T) =
 proc `%=`*[T: SomeInteger](num0: var T, num1: T) =
     num0 = num0 mod num1
 
-const MOD = 10^9 + 7
-
-
-type
-    HeavyLightDecomposition* = ref object
-        graph: seq[seq[Natural]]
-        path_root, path_parent, left, right: seq[Natural]
-
-proc initHeavyLightdecomposition*(size: Positive): HeavyLightDecomposition =
-    var
-        graph = newSeqWith(size, newSeq[Natural]())
-        empty_seq = newSeq[Natural]()
-    return HeavyLightDecomposition(graph: graph, path_root: empty_seq, path_parent: empty_seq, left: empty_seq, right: empty_seq)
-
-proc add_edge*(self: var HeavyLightDecomposition, a, b: Natural) =
-    self.graph[a].add(b)
-    self.graph[b].add(a)
-
-proc build*(self: var HeavyLightDecomposition, root: Natural) =
-    var
-        stack = @[(root, root)]
-        q = newSeq[Natural]()
-        v, p: Natural
-    
-    while stack.len != 0:
-        (v, p) = stack.pop()
-        q.add(v)
-        for i, to in self.graph[v]:
-            if to == p:
-                self.graph[v][i] = self.graph[v][^1]
-                let _ = self.graph[v].pop()
-                break
-        for to in self.graph[v]:
-            stack.add((to, v))
-    
-    let n = self.graph.len
-    var size = newSeqWith(n, 1)
-    for v in reversed(q):
-        for i, to in self.graph[v]:
-            size[v] += size[to]
-            if size[self.graph[v][0]] < size[to]:
-                (self.graph[v][0], self.graph[v][i]) = (self.graph[v][i], self.graph[v][0])
-    
-    self.path_root = newSeqWith(n, root)
-    self.path_parent = newSeqWith(n, root)
-    self.left = newSeq[Natural](n)
-    self.right = newSeq[Natural](n)
-    var
-        k = 0
-        stack1 = @[(root, 0)]
-        op: int
-        to: Natural
-    while stack1.len != 0:
-        (v, op) = stack1.pop()
-        if op == 1:
-            self.right[v] = k
-            continue
-        self.left[v] = k
-        inc k
-        stack1.add((v, 1))
-        if 1 < self.graph[v].len:
-            for i, to in self.graph[v][1..^1]:
-                self.path_root[to] = to
-                self.path_parent[to] = v
-                stack1.add((to, 0))
-        if self.graph[v].len != 0:
-            to = self.graph[v][0]
-            self.path_root[to] = self.path_root[v]
-            self.path_parent[to] = self.path_parent[v]
-            stack1.add((to, 0))
-
-proc sub_tree*(self: var HeavyLightDecomposition, v: Natural): (Natural, Natural) =
-    return (self.left[v], self.right[v])
-
-proc path*(self: var HeavyLightDecomposition, v, u: Natural): seq[(Natural, int)] =
-    var
-        x = v
-        y = u
-        res = newSeq[(Natural, int)]()
-        p: Natural
-    while self.path_root[x] != self.path_root[y]:
-        if self.left[x] < self.left[y]:
-            p = self.path_root[y]
-            res.add((self.left[p], self.left[y] + 1))
-            y = self.path_parent[y]
-        else:
-            p = self.path_root[x]
-            res.add((self.left[p], self.left[x] + 1))
-            x = self.path_parent[x]
-    res.add((min(self.left[x], self.left[y]), max(self.left[x], self.left[y]) + 1))
-    return res
-
-
 proc bit_length(n: Natural): Natural =
     const BIT_SIZE = 24
     if n == 0:
@@ -217,47 +124,24 @@ proc query*[T, K](self: var LazySegmentTree[T, K], left, right: Natural): T =
 
 
 var
-    S, C, ans: seq[int]
-    init_val: seq[(int, int)]
-    hld: HeavyLightDecomposition
-    lazy_seg_tree: LazySegmentTree[(int, int), int]
+    a, ans: seq[int]
+    lazy_seg_tree: LazySegmentTree[int, int]
 
 proc solve() =
-    let N = input().parseInt
-    S = input().split.map(parseInt)
-    C = input().split.map(parseInt)
+    let _ = input().parseInt
+    a = input().split.map(parseInt)
 
-    hld = initHeavyLightdecomposition(N)
-    var ai, bi: int
-    for _ in 0..<N - 1:
-        (ai, bi) = input().split.mapIt(it.parseInt - 1)
-        hld.add_edge(ai, bi)
-    hld.build(0)
-
-    init_val = newSeqWith(N, (0, 0))
-    for i, (si, ci) in zip(S, C):
-        let idx = hld.sub_tree(i)[0]
-        init_val[idx] = (si, ci)
-    lazy_seg_tree = toLazySegmentTree(init_val, (0, 0), 0, (a, b) => ((a[0] + b[0]) mod MOD, (a[1] + b[1]) mod MOD),
-                                      (a, b) => ((a[0] + a[1]*b) mod MOD, a[1]), (a, b) => (a + b) mod MOD)
+    lazy_seg_tree = toLazySegmentTree(a, 10^18, 0, (a, b) => min(a, b), (a, b) => a + b, (a, b) => a + b)
 
     let Q = input().parseInt
-    var xi, yi, zi, cost: int
+    var ki, li, ri, ci: int
     for _ in 0..<Q:
-        let inputs = input().split.map(parseInt)
-        if inputs[0] == 0:
-            (xi, yi, zi) = inputs[1..^1]
-            dec xi; dec yi
-            for (left, right) in hld.path(xi, yi):
-                lazy_seg_tree.update(left, right, zi)
+        (ki, li, ri, ci) = input().split.map(parseInt)
+        dec li
+        if ki == 1:
+            lazy_seg_tree.update(li, ri, ci)
         else:
-            (xi, yi) = inputs[1..^1]
-            dec xi; dec yi
-            cost = 0
-            for (left, right) in hld.path(xi, yi):
-                cost += lazy_seg_tree.query(left, right)[0]
-            cost %= MOD
-            ans.add(cost)
+            ans.add(lazy_seg_tree.query(li, ri))
     echo ans.join("\n")
 
 when is_main_module:
